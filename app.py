@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_debugtoolbar import DebugToolbarExtension
 from models import db, connect_db, Cupcake
 
@@ -75,7 +75,13 @@ def update_cupcake(cupcake_id):
 
 @app.route("/api/cupcakes/<int:cupcake_id>", methods=["DELETE"])
 def delete_cupcake(cupcake_id):
+    """Deletes a cupcake from the database"""
     cupcake = Cupcake.query.get_or_404(cupcake_id)
     db.session.delete(cupcake)
     db.session.commit()
     return (jsonify(message="deleted"), 200)
+
+@app.route("/")
+def display_index():
+    """Shows off the index page"""
+    return render_template("index.html")
