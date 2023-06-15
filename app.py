@@ -1,6 +1,6 @@
-from flask import Flask, render_template, redirect, request
+from flask import Flask, jsonify, request
 from flask_debugtoolbar import DebugToolbarExtension
-from models import db, connect_db
+from models import db, connect_db, Cupcake
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///bakery'
@@ -13,3 +13,49 @@ debug = DebugToolbarExtension(app)
 app.app_context().push()
 
 connect_db(app)
+
+def serialize_cupcakes(cupcake):
+    """Serializes a desert SQLAlchemy obj to dictionary"""
+    return {
+        "id": cupcake.id,
+        "flavor": cupcake.flavor,
+        "size": cupcake.size,
+        "rating": cupcake.rating,
+        "image": cupcake.image
+    }
+
+@app.route("/api/cupcakes")
+def list_all_cupcakes():
+    """Returns all the cupcakes as JSON"""
+
+    cupcakes = Cupcake.query.all()
+    serialized = [serialize_cupcakes(c) for c in cupcakes]
+
+    return (jsonify(cupcakes=serialized), 200)
+
+@app.route("/api/cupcakes/<int:cupcake_id>")
+def list_a_cupcake(cupcake_id):
+    """Returns a cupcake as JSON"""
+
+    cupcake = Cupcake.query.get(cupcake_id)
+    serialized = serialize_cupcakes(cupcake)
+
+    return (jsonify(cupcake=serialized), 200)
+
+@app.route("/api/cupcakes", methods=["POST"])
+def new_cupcake():
+    """Adds a new cupcake to the database"""
+
+    flavor = request.json["flavor"]
+    size = request.json["size"]
+    rating = request.json["rating"]
+    image = request.json["image"]
+
+    cupcake = Cupcake(flavor=flavor, size=size, rating=rating, image=image)
+
+    db.session.add(cupcake)
+    db.session.commit()
+
+    serialized = serialize_cupcakes(cupcake)
+    return ( jsonify(cupcake=serialized), 201 )
+
